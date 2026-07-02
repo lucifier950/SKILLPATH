@@ -1,1 +1,68 @@
 @import "tailwindcss";
+:root{
+    --neu-bg: #e0e5ec;
+    --neu-light:#ffffff;
+    --neu-dark:#a3b1c6;
+    --neu-text:#2d3a5a;
+    --neu-text-soft:#5d6b85;
+    --neu-accent:#4b6cb7;
+}
+body{
+    background-color: var(--neu-bg);
+    color: var(--neu-text);
+    font-family: "Segoe UI",system-ui,  sans-serif;
+}
+.neu-raised{
+    background: var(--neu-bg);
+    box-shadow:  6px 6px 12px var(--neu-dark),
+                 -6px -6px 12px var(--neu-light);
+}
+.neu-pressed{
+    background-color: var(--neu-bg);
+    box-shadow: inset 6px 6px 12px var(--neu-dark),
+                inset -6px -6px 12px var(--neu-light);
+}
+.neu-gradient-text{
+    background: linear-gradient(135deg, #4b6cb7, #2d3a5a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.neu-btn-accent{
+    background: linear-gradient(145deg, #557ccb, #4361a3);
+    color: #fff;
+    border-radius: 14px;
+    box-shadow: 6px 6px 12px var(--neu-dark), -6px -6px 12px var(--neu-light);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.neu-btn-accent:hover{ transform: translateY(-1px); }
+.neu-btn-accent:active{
+    box-shadow: inset 4px 4px 8px #3a559c, inset -2px -2px 6px #6a8bd6;
+}
+.neu-card{
+    background: var(--neu-bg);
+    border-radius: 20px;
+    box-shadow: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.neu-card:hover{
+    transform: translateY(-4px);
+    box-shadow: 12px 12px 22px var(--neu-dark), -12px -12px 22px var(--neu-light);
+}
+.neu-icon{
+    background: var(--neu-bg);
+    box-shadow: 5px 5px 10px var(--neu-dark), -5px -5px 10px var(--neu-light);
+}
+.neu-input{
+    background: var(--neu-bg);
+    color: var(--neu-text);
+    border-radius: 12px;
+    box-shadow: inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light);
+    outline: none;
+    border: none;
+    transition: box-shadow 0.2s ease;
+}
+.neu-input::placeholder{ color: var(--neu-text-soft); }
+.neu-input:focus{
+    box-shadow: inset 5px 5px 10px var(--neu-dark), inset -5px -5px 10px var(--neu-light);
+}

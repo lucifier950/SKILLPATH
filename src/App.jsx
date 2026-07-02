@@ -5,6 +5,8 @@ import AboutPage from './components/Pages/AboutPage';
 import Footer from './components/layout/Footer';
 import ContactPage from './components/Pages/ContactPage';
 import NotFoundPage from './components/Pages/NotFoundPage';
+import LoginPage from './components/Pages/LoginPage';
+import SignUpPage from './components/Pages/SignUpPage';
 
 function App() {
   return (
@@ -14,6 +16,8 @@ function App() {
       <Route path="/" element={<LandingPage/>}/>
       <Route path="/about" element={<AboutPage/>}/>
       <Route path="/contact" element={<ContactPage/>}/>
+      <Route path="/login" element={<LoginPage/>}/>
+      <Route path="/signup" element={<SignUpPage/>}/>
       <Route path="*" element={<NotFoundPage/>}/>
     </Routes>
     <Footer/>
