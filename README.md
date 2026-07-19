@@ -13,8 +13,8 @@ and watch an LLM build you a step-by-step learning path, saved to your account.
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
-![Groq](https://img.shields.io/badge/AI-Groq%20·%20Llama%203.3%2070B-F55036?style=for-the-badge)
-![JWT](https://img.shields.io/badge/Auth-JWT%20%2B%20HttpOnly%20Cookies-8A2BE2?style=for-the-badge)
+![Groq](https://img.shields.io/badge/AI-Groq_Llama_3.3_70B-F55036?style=for-the-badge)
+![JWT](https://img.shields.io/badge/Auth-JWT_HttpOnly_Cookies-8A2BE2?style=for-the-badge)
 
 </div>
 
