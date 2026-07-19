@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import PhoneRegister from "../auth/PhoneRegister";
 import { API_URL } from "../../api.js";
 
 function SignUpPage(){
@@ -73,8 +72,6 @@ function SignUpPage(){
                     </p>
                 </form>
             )}
-            <p className="text-center text-[var(--neu-text-soft)] my-6">or register with your phone</p>
-            <PhoneRegister />
         </div>
     );
 }
