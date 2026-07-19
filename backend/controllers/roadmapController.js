@@ -23,3 +23,23 @@ export const getMyRoadmaps = async (req, res) => {
     const roadmaps = await Roadmap.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.status(200).json(roadmaps);
 };
+
+export const toggleStep = async (req, res) => {
+    const roadmap = await Roadmap.findById(req.params.id);
+    if (!roadmap) {
+        res.status(404);
+        throw new Error('Roadmap not found');
+    }
+    if (roadmap.user.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error('Not authorized to modify this roadmap');
+    }
+    const step = roadmap.steps.id(req.params.stepId);
+    if (!step) {
+        res.status(404);
+        throw new Error('Step not found');
+    }
+    step.completed = !step.completed;
+    await roadmap.save();
+    res.status(200).json(roadmap);
+};
