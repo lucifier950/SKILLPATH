@@ -78,30 +78,42 @@ function RoadmapPage() {
             </h1>
 
             <form onSubmit={handleSubmit} className="neu-card p-8 mb-10">
+                <label className="block font-semibold mb-2">
+                    What do you want to learn? 🎯
+                </label>
                 <input
                     name="goal"
                     type="text"
-                    placeholder="What do you want to learn? (e.g. React, Python...)"
+                    placeholder="e.g. React, Python, Data Science..."
                     value={form.goal}
                     onChange={handleChange}
                     className="neu-input w-full p-3 mb-4"
                 />
                 <div className="flex gap-4 mb-4">
-                    <select name="level" value={form.level} onChange={handleChange} className="neu-input flex-1 p-3">
-                        <option value="beginner">Beginner</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                    </select>
-                    <input
-                        name="weeklyHours"
-                        type="number"
-                        min="1"
-                        max="60"
-                        value={form.weeklyHours}
-                        onChange={handleChange}
-                        className="neu-input flex-1 p-3"
-                        placeholder="Hours per week"
-                    />
+                    <div className="flex-1">
+                        <label className="block font-semibold mb-2">
+                            Your current level
+                        </label>
+                        <select name="level" value={form.level} onChange={handleChange} className="neu-input w-full p-3">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                    <div className="flex-1">
+                        <label className="block font-semibold mb-2">
+                            Hours per week
+                        </label>
+                        <input
+                            name="weeklyHours"
+                            type="number"
+                            min="1"
+                            max="60"
+                            value={form.weeklyHours}
+                            onChange={handleChange}
+                            className="neu-input w-full p-3"
+                        />
+                    </div>
                 </div>
                 <button type="submit" disabled={loading} className="neu-btn-accent w-full font-semibold py-3">
                     {loading ? "Generating your roadmap with AI..." : "Generate Roadmap"}
