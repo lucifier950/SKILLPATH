@@ -7,6 +7,8 @@
 An AI-powered learning roadmap generator — pick a goal, your level, and your weekly hours,
 and watch an LLM build you a step-by-step learning path, saved to your account.
 
+### 🌐 [**Live Demo**](https://skillpath-eight-khaki.vercel.app) · [API Health](https://skillpath-1-plvi.onrender.com/api/health)
+
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express&logoColor=white)
@@ -36,6 +38,7 @@ and watch an LLM build you a step-by-step learning path, saved to your account.
 | | |
 |---|---|
 | 🤖 **AI Roadmap Generation** | Personalized learning paths (steps, durations, resources) generated from a 3-field form via Groq |
+| ✅ **Interactive Progress Tracking** | Animated timeline — completing a step unlocks the next one; ticks persist to MongoDB per user |
 | 🔐 **Real Authentication** | Register · Login · Logout · Session persistence — JWT in **HttpOnly cookies**, immune to XSS token theft |
 | 🛡️ **Protected API** | `protect` middleware verifies the JWT on every private request — users only ever see *their own* roadmaps |
 | 🧯 **Clean Error Handling** | Custom `notFound` + `errorHandler` middleware — JSON errors only, stack traces never leak outside development |
@@ -76,6 +79,7 @@ and watch an LLM build you a step-by-step learning path, saved to your account.
 | `GET` | `/api/auth/me` | 🔒 | Current user's profile |
 | `POST` | `/api/roadmaps` | 🔒 | Generate & save an AI roadmap |
 | `GET` | `/api/roadmaps` | 🔒 | List the logged-in user's roadmaps |
+| `PATCH` | `/api/roadmaps/:id/steps/:stepId` | 🔒 | Toggle a step's completion (owner only) |
 | `GET` | `/api/health` | — | Health check |
 
 ## 🛠️ Running Locally
@@ -118,13 +122,19 @@ The frontend reads `VITE_API_URL` (defaults to `http://localhost:5001` for local
 
 ## ☁️ Deployment
 
-| Piece | Platform | Config |
-|-------|----------|--------|
-| Backend | **Render** | root `backend` · start `node server.js` · env: `MONGO_URI` `JWT_SECRET` `GROQ_API_KEY` `NODE_ENV=production` `CLIENT_URL=<frontend URL>` |
-| Frontend | **Vercel** | root `frontend/vite-project` · env: `VITE_API_URL=<backend URL>` |
-| Database | **MongoDB Atlas** | already cloud-hosted ✅ |
+**Live right now:**
 
-> Setting `CLIENT_URL` automatically switches cookies to `secure` + `SameSite=None` for cross-site auth between the two domains.
+| Piece | Platform | URL |
+|-------|----------|-----|
+| 🖥️ Frontend | **Vercel** | https://skillpath-eight-khaki.vercel.app |
+| ⚙️ Backend API | **Render** | https://skillpath-1-plvi.onrender.com |
+| 🍃 Database | **MongoDB Atlas** | cloud-hosted cluster |
+
+**Config:** Render runs from root `backend` (`npm install` / `node server.js`) with env `MONGO_URI` `JWT_SECRET` `GROQ_API_KEY` `NODE_ENV=production` `CLIENT_URL`. Vercel builds from root `frontend/vite-project`.
+
+> **Safari-proof cookies:** `vercel.json` rewrites `/api/*` to the Render backend, so the frontend and API share one origin — the JWT cookie is always **first-party** and works in every browser (Safari blocks third-party cookies entirely).
+
+> ⏳ Free-tier note: the Render instance sleeps after inactivity — the first request can take ~50 seconds to wake it.
 
 ## 🔒 Security Highlights
 
