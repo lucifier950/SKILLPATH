@@ -8,9 +8,17 @@ import NotFoundPage from './components/Pages/NotFoundPage';
 import LoginPage from './components/Pages/LoginPage';
 import SignUpPage from './components/Pages/SignUpPage';
 import RoadmapPage from './components/Pages/RoadmapPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider } from './context/AuthContext.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
+
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function App() {
-  return (
+  const app = (
+    <ToastProvider>
+    <AuthProvider>
     <BrowserRouter>
     <Navbar/>
     <Routes>
@@ -19,12 +27,19 @@ function App() {
       <Route path="/contact" element={<ContactPage/>}/>
       <Route path="/login" element={<LoginPage/>}/>
       <Route path="/signup" element={<SignUpPage/>}/>
-      <Route path="/roadmap" element={<RoadmapPage/>}/>
+      <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage/></ProtectedRoute>}/>
       <Route path="*" element={<NotFoundPage/>}/>
     </Routes>
     <Footer/>
     </BrowserRouter>
+    </AuthProvider>
+    </ToastProvider>
   );
+
+  // Google sign-in activates only when VITE_GOOGLE_CLIENT_ID is configured
+  return googleClientId ? (
+    <GoogleOAuthProvider clientId={googleClientId}>{app}</GoogleOAuthProvider>
+  ) : app;
 }
 
 export default App;

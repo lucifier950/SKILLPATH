@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { API_URL } from "../../api.js";
+import { useAuth } from "../../context/useAuth.js";
+import { useToast } from "../../context/useToast.js";
+import GoogleAuthButton from "../GoogleAuthButton.jsx";
 
 function SignUpPage(){
     const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
-    const [submitted, setSubmitted] = useState(false);
+    const { user, setUser } = useAuth();
+    const { toast } = useToast();
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -13,11 +18,11 @@ function SignUpPage(){
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.name || !form.email || !form.password || !form.confirm) {
-            alert("Please fill all the fields");
+            toast("Please fill all the fields", "error");
             return;
         }
         if (form.password !== form.confirm) {
-            alert("Passwords do not match");
+            toast("Passwords do not match", "error");
             return;
         }
         try {
@@ -29,28 +34,32 @@ function SignUpPage(){
             });
             const data = await res.json();
             if (!res.ok) {
-                alert(data.message);
+                toast(data.message, "error");
                 return;
             }
-            setSubmitted(true);
-        } catch (err) {
-            alert("Cannot reach the server — is the backend running?");
+            setUser(data);
+            toast(`Account created — welcome to SkillPath, ${data.name?.split(" ")[0]}!`, "success");
+            navigate("/roadmap", { replace: true });
+        } catch {
+            toast("Cannot reach the server — please try again", "error");
         }
     };
 
+    if (user) {
+        return <Navigate to="/roadmap" replace />;
+    }
+
     return (
-        <div className="max-w-xl mx-auto py-16 px-4">
-            <h1 className="text-3xl font-bold mb-8 text-center neu-gradient-text">
-                Sign Up
+        <div className="relative overflow-hidden">
+        <div className="sp-aurora" aria-hidden="true"><span /><span /><span /></div>
+        <div className="relative max-w-xl mx-auto py-16 px-4">
+            <h1 className="text-4xl font-extrabold tracking-tight mb-3 text-center neu-gradient-text">
+                Create your account
             </h1>
-            {submitted ? (
-                <div className="neu-card p-8 text-center">
-                    <p className="text-[var(--neu-accent)] text-lg font-semibold">
-                        Account created! Welcome to SkillPath.
-                    </p>
-                </div>
-            ) : (
-                <form onSubmit={handleSubmit} className="neu-card p-8">
+            <p className="text-center text-[var(--neu-text-soft)] mb-8">
+                Your first AI roadmap is about a minute away.
+            </p>
+            <form onSubmit={handleSubmit} className="neu-card p-8">
                     <input name="name" type="text" placeholder="Your Name"
                         value={form.name} onChange={handleChange}
                         className="neu-input w-full p-3 mb-4" />
@@ -66,12 +75,13 @@ function SignUpPage(){
                     <button type="submit" className="neu-btn-accent w-full font-semibold py-3">
                         Create Account
                     </button>
+                    <GoogleAuthButton />
                     <p className="text-center text-[var(--neu-text-soft)] mt-4">
                         Already have an account?{" "}
                         <Link to="/login" className="text-[var(--neu-accent)] font-semibold">Login</Link>
                     </p>
                 </form>
-            )}
+        </div>
         </div>
     );
 }
