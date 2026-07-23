@@ -19,6 +19,7 @@ const roadmapSchema = new mongoose.Schema(
                 duration: String,
                 resources: [String],
                 completed: { type: Boolean, default: false },
+                completedAt: { type: Date, default: null },
             },
         ],
     },

@@ -7,6 +7,7 @@ import { errorHandler,notFound } from './middleware/errorMiddleware.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors'
 import roadmapRouter from './routes/roadmapRoutes.js';
+import contactRouter from './routes/contactRoutes.js';
 dotenv.config();
 await connectDB();
 const app = express()
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use('/api/auth',router);
 app.use('/api/roadmaps', roadmapRouter);
+app.use('/api/contact', contactRouter);
 app.get('/api/health', (req,res)=>{
     res.json({
         status: 'ok',
