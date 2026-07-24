@@ -12,6 +12,7 @@ dotenv.config();
 await connectDB();
 const app = express()
 app.disable('x-powered-by')
+app.set('trust proxy', 1) // Render sits behind one proxy hop; needed for real client IPs
 const PORT = process.env.PORT
 app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',

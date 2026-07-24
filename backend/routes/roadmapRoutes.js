@@ -1,11 +1,12 @@
 import express from 'express';
 import { createRoadmap, createRoadmapStream, getMyRoadmaps, toggleStep, explainStep } from '../controllers/roadmapController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { aiLimiter } from '../middleware/rateLimiters.js';
 
 const router = express.Router();
-router.post('/', protect, createRoadmap);
-router.post('/stream', protect, createRoadmapStream);
+router.post('/', protect, aiLimiter, createRoadmap);
+router.post('/stream', protect, aiLimiter, createRoadmapStream);
 router.get('/', protect, getMyRoadmaps);
 router.patch('/:id/steps/:stepId', protect, toggleStep);
-router.post('/:id/steps/:stepId/explain', protect, explainStep);
+router.post('/:id/steps/:stepId/explain', protect, aiLimiter, explainStep);
 export default router;
