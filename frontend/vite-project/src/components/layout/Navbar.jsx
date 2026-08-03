@@ -64,6 +64,22 @@ function Navbar(){
             </div>
 
             <div className="flex items-center gap-2.5">
+                <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new Event("sp-cmdk-open"))}
+                    className="sp-cmdk-hint"
+                    aria-label="Open command palette"
+                    title="Command palette"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="M21 21l-4.3-4.3" />
+                    </svg>
+                    <span className="hidden lg:inline">Search</span>
+                    <kbd className="hidden md:inline sp-kbd" aria-hidden="true">
+                        {/Mac/i.test(navigator.platform || "") ? "⌘K" : "Ctrl K"}
+                    </kbd>
+                </button>
                 <ThemeToggle />
                 {user ? (
                     <UserMenu />

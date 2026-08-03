@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes,Route } from 'react-router-dom'
 import LandingPage from "./components/Pages/LandingPage";
 import Navbar from './components/layout/Navbar';
+import CommandPalette from './components/layout/CommandPalette';
 import AboutPage from './components/Pages/AboutPage';
 import Footer from './components/layout/Footer';
 import ContactPage from './components/Pages/ContactPage';
@@ -21,6 +22,7 @@ function App() {
     <AuthProvider>
     <BrowserRouter>
     <Navbar/>
+    <CommandPalette/>
     <Routes>
       <Route path="/" element={<LandingPage/>}/>
       <Route path="/about" element={<AboutPage/>}/>

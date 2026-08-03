@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { motion } from "motion/react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { motion, useReducedMotion } from "motion/react";
 import { API_URL } from "../../api.js";
 import { useAuth } from "../../context/useAuth.js";
 import { useToast } from "../../context/useToast.js";
 import RoadmapView from "../roadmap/RoadmapView.jsx";
 import ActivityPanel from "../roadmap/ActivityPanel.jsx";
+import XPPanel from "../gamification/XPPanel.jsx";
+import LevelUpModal from "../gamification/LevelUpModal.jsx";
 import { computeActivity } from "../../utils/activity.js";
+import { calculateXP, getLevel } from "../../utils/gamification.js";
 
 const API = `${API_URL}/api/roadmaps`;
 
@@ -19,14 +23,60 @@ function RoadmapPage() {
     const { setUser } = useAuth();
     const { toast } = useToast();
     const goalInputRef = useRef(null);
+    const location = useLocation();
+    const navigate = useNavigate();
+    const reducedMotion = useReducedMotion();
 
-    const exampleGoals = ["React", "Python for Data Science", "System Design"];
+    // The command palette navigates here with {selectId} — adjust the selection
+    // during render (react's "storing information from previous renders" pattern),
+    // keyed by location.key so each navigation is consumed exactly once.
+    const [consumedNav, setConsumedNav] = useState(null);
+    if (location.state?.selectId && consumedNav !== location.key) {
+        setConsumedNav(location.key);
+        setSelectedId(location.state.selectId);
+    }
+
+    // {newRoadmap} is a pure DOM side effect (focus), then the hint is cleared
+    // so back/refresh doesn't replay either hint
+    useEffect(() => {
+        if (!location.state) return;
+        if (location.state.newRoadmap) {
+            goalInputRef.current?.focus();
+            goalInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        navigate(location.pathname, { replace: true, state: null });
+    }, [location.state, location.pathname, navigate]);
+
+    const [expanding, setExpanding] = useState(false);
+
+    const suggestions = [
+        { emoji: "🚀", label: "Fullstack React" },
+        { emoji: "🤖", label: "Python for Machine Learning" },
+        { emoji: "⚡", label: "System Design Fundamentals" },
+        { emoji: "🎨", label: "UI/UX Design" },
+        { emoji: "📊", label: "Data Engineering" },
+    ];
+    const levels = ["beginner", "intermediate", "advanced"];
 
     const selected = roadmaps.find((rm) => rm._id === selectedId) || roadmaps[0] || null;
     const totalSteps = roadmaps.reduce((n, rm) => n + rm.steps.length, 0);
     const doneSteps = roadmaps.reduce((n, rm) => n + rm.steps.filter((s) => s.completed).length, 0);
     const overallPct = totalSteps ? Math.round((doneSteps / totalSteps) * 100) : 0;
     const { counts, streak } = useMemo(() => computeActivity(roadmaps), [roadmaps]);
+    const xp = useMemo(() => calculateXP(roadmaps, streak), [roadmaps, streak]);
+    const level = getLevel(xp);
+    const [levelUp, setLevelUp] = useState(null);
+    const prevLevel = useRef(null);
+
+    // Level is derived, so level-up detection is just watching it climb.
+    // prevLevel starts null so the initial data load never triggers the modal.
+    useEffect(() => {
+        if (fetching) return;
+        if (prevLevel.current !== null && level > prevLevel.current) {
+            setLevelUp(level);
+        }
+        prevLevel.current = level;
+    }, [level, fetching]);
 
     useEffect(() => {
         let cancelled = false;
@@ -71,6 +121,31 @@ function RoadmapPage() {
     const startNewRoadmap = () => {
         goalInputRef.current?.focus();
         goalInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+
+    const expandPrompt = async () => {
+        if (!form.goal.trim() || expanding) return;
+        setExpanding(true);
+        try {
+            const res = await fetch(`${API}/enhance`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ goal: form.goal }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                if (res.status === 401) { setUser(null); return; }
+                toast(data.message || "Could not expand the prompt", "error");
+                return;
+            }
+            setForm((f) => ({ ...f, goal: data.goal }));
+            goalInputRef.current?.focus();
+        } catch {
+            toast("Cannot reach the server — please try again", "error");
+        } finally {
+            setExpanding(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -199,6 +274,7 @@ function RoadmapPage() {
                                 })}
                             </nav>
                         </div>
+                        <XPPanel xp={xp} />
                         <ActivityPanel counts={counts} streak={streak} />
                     </aside>
                 )}
@@ -219,25 +295,64 @@ function RoadmapPage() {
                         <label className="block font-semibold mb-2" htmlFor="goal-input">
                             What do you want to learn? 🎯
                         </label>
-                        <input
-                            id="goal-input"
-                            ref={goalInputRef}
-                            name="goal"
-                            type="text"
-                            placeholder="e.g. React, Python, Data Science..."
-                            value={form.goal}
-                            onChange={handleChange}
-                            className="neu-input w-full p-3 mb-4"
-                        />
-                        <div className="mb-4">
-                            <label className="block font-semibold mb-2" htmlFor="level-select">
-                                Your current level
-                            </label>
-                            <select id="level-select" name="level" value={form.level} onChange={handleChange} className="neu-input w-full p-3">
-                                <option value="beginner">Beginner</option>
-                                <option value="intermediate">Intermediate</option>
-                                <option value="advanced">Advanced</option>
-                            </select>
+                        <div className="sp-command flex items-center gap-2 mb-3">
+                            <input
+                                id="goal-input"
+                                ref={goalInputRef}
+                                name="goal"
+                                type="text"
+                                placeholder="e.g. React, Python, Data Science..."
+                                value={form.goal}
+                                onChange={handleChange}
+                                className="flex-1 bg-transparent border-none outline-none p-3 text-[var(--neu-text)] placeholder-[var(--neu-text-soft)]"
+                            />
+                            <button
+                                type="button"
+                                onClick={expandPrompt}
+                                disabled={expanding || !form.goal.trim()}
+                                title="Let AI make your goal more specific"
+                                className="sp-expand-btn shrink-0 mr-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-[var(--neu-accent)] disabled:opacity-40 transition-opacity"
+                            >
+                                {expanding ? "Expanding…" : "✨ Expand"}
+                            </button>
+                        </div>
+                        <div className="flex gap-2 flex-wrap mb-5">
+                            {suggestions.map(({ emoji, label }) => (
+                                <button
+                                    key={label}
+                                    type="button"
+                                    onClick={() => { setForm((f) => ({ ...f, goal: label })); goalInputRef.current?.focus(); }}
+                                    className="neu-raised rounded-full px-4 py-1.5 text-sm font-medium text-[var(--neu-text-soft)] hover:text-[var(--neu-accent)] transition-colors"
+                                >
+                                    {emoji} {label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mb-5">
+                            <p className="font-semibold mb-2">Your current level</p>
+                            <div className="sp-seg neu-pressed rounded-full p-1 flex" role="radiogroup" aria-label="Your current level">
+                                {levels.map((lvl) => (
+                                    <button
+                                        key={lvl}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={form.level === lvl}
+                                        onClick={() => setForm((f) => ({ ...f, level: lvl }))}
+                                        className={`relative flex-1 rounded-full py-2 text-sm font-semibold capitalize transition-colors ${
+                                            form.level === lvl ? "text-white" : "text-[var(--neu-text-soft)] hover:text-[var(--neu-text)]"
+                                        }`}
+                                    >
+                                        {form.level === lvl && (
+                                            <motion.div
+                                                layoutId="active-level-pill"
+                                                className="absolute inset-0 rounded-full bg-gradient-to-r from-[var(--neu-accent)] to-[#6a8fe0]"
+                                                transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                                            />
+                                        )}
+                                        <span className="relative">{lvl}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                         <button type="submit" disabled={loading} className="neu-btn-accent w-full font-semibold py-3">
                             {loading ? "Generating your roadmap with AI..." : "Generate Roadmap"}
@@ -246,22 +361,37 @@ function RoadmapPage() {
 
                     {streaming && (
                         <div className="neu-card p-8 mb-8">
-                            <div className="flex justify-between items-baseline flex-wrap gap-2">
-                                <h2 className="text-2xl font-bold text-[var(--neu-accent)] capitalize">{streaming.goal}</h2>
-                                {streaming.estimatedDuration && (
-                                    <span className="text-sm font-semibold text-[var(--neu-text-soft)]">{streaming.estimatedDuration}</span>
-                                )}
+                            <div className="flex items-center gap-5 mb-6">
+                                <div className="sp-orb sp-orb-sm thinking" aria-hidden="true">
+                                    <span className="sp-radar-ring" />
+                                    <span className="sp-radar-ring" style={{ animationDelay: "0.9s" }} />
+                                    <div className="sp-orb-core" />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="flex items-baseline gap-3 flex-wrap">
+                                        <h2 className="text-2xl font-bold text-[var(--neu-accent)] capitalize">{streaming.goal}</h2>
+                                        {streaming.estimatedDuration && (
+                                            <span className="text-sm font-semibold text-[var(--neu-text-soft)]">{streaming.estimatedDuration}</span>
+                                        )}
+                                    </div>
+                                    <p className="text-[var(--neu-text-soft)] font-medium" aria-live="polite">
+                                        {streaming.stage}
+                                        <span className="sp-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
+                                    </p>
+                                </div>
                             </div>
-                            <p className="text-[var(--neu-text-soft)] mb-6 font-medium">
-                                {streaming.stage}
-                                <span className="sp-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
-                            </p>
                             <div className="sp-timeline">
                                 {streaming.steps.map((step, i) => (
-                                    <div key={i} className="sp-step sp-stream-in">
+                                    <motion.div
+                                        key={i}
+                                        className="sp-step"
+                                        initial={reducedMotion ? false : { y: 30, opacity: 0, scale: 0.95 }}
+                                        animate={{ y: 0, opacity: 1, scale: 1 }}
+                                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                                    >
                                         <div className="sp-rail">
                                             <div className="sp-node sp-node-static">{step.stepNumber}</div>
-                                            <div className="sp-line" />
+                                            <div className="sp-line sp-line-live" />
                                         </div>
                                         <div className="sp-content neu-raised">
                                             <p className="font-semibold">
@@ -270,8 +400,19 @@ function RoadmapPage() {
                                             </p>
                                             <p className="text-[var(--neu-text-soft)] mt-2">{step.description}</p>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))}
+                                {/* the step Groq is writing right now */}
+                                <div className="sp-step" aria-hidden="true">
+                                    <div className="sp-rail">
+                                        <div className="sp-node sp-node-static sp-node-ghost">{streaming.steps.length + 1}</div>
+                                    </div>
+                                    <div className="sp-content neu-pressed">
+                                        <div className="sp-skel-bar w-2/3" />
+                                        <div className="sp-skel-bar w-full mt-3" />
+                                        <div className="sp-skel-bar w-1/2 mt-2" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -287,20 +428,9 @@ function RoadmapPage() {
                     {!fetching && !streaming && roadmaps.length === 0 && (
                         <div className="neu-card p-8 text-center">
                             <p className="text-lg font-semibold mb-2">No roadmaps yet</p>
-                            <p className="text-[var(--neu-text-soft)] mb-6">
-                                Describe a goal above and watch AI build your learning path — or try one of these:
+                            <p className="text-[var(--neu-text-soft)]">
+                                Describe a goal above — or tap one of the suggestions — and watch AI build your learning path.
                             </p>
-                            <div className="flex gap-3 justify-center flex-wrap">
-                                {exampleGoals.map((goal) => (
-                                    <button
-                                        key={goal}
-                                        onClick={() => setForm({ ...form, goal })}
-                                        className="neu-raised rounded-full px-5 py-2 font-semibold text-sm text-[var(--neu-accent)] hover:text-[var(--neu-text)] transition-colors"
-                                    >
-                                        {goal}
-                                    </button>
-                                ))}
-                            </div>
                         </div>
                     )}
 
@@ -309,6 +439,7 @@ function RoadmapPage() {
                     )}
                 </main>
             </div>
+            <LevelUpModal level={levelUp} onClose={() => setLevelUp(null)} />
         </div>
     );
 }

@@ -20,6 +20,17 @@ function ThemeToggle() {
         }
     }, [theme]);
 
+    // the command palette can also flip the theme — track data-theme so the
+    // sun/moon icon never desyncs from the actual theme
+    useEffect(() => {
+        const obs = new MutationObserver(() => {
+            const t = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+            setTheme((cur) => (cur === t ? cur : t));
+        });
+        obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+        return () => obs.disconnect();
+    }, []);
+
     const dark = theme === "dark";
 
     const toggle = () => {

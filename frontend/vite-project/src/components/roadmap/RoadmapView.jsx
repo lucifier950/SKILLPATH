@@ -11,10 +11,11 @@ function RoadmapView({ roadmap, onToggleStep }) {
     const pct = total ? Math.round((done / total) * 100) : 0;
     const prevPct = useRef(pct);
     const [mentorStep, setMentorStep] = useState(null);
-    // explanations are cached per step so reopening a deep dive is instant (and free)
+    // explanations are cached per step AND mentor mode ("id:mode" keys) so
+    // reopening any lens of a deep dive is instant (and free)
     const [explanations, setExplanations] = useState({});
-    const cacheExplanation = useCallback((stepId, text) => {
-        setExplanations((prev) => ({ ...prev, [stepId]: text }));
+    const cacheExplanation = useCallback((cacheKey, text) => {
+        setExplanations((prev) => ({ ...prev, [cacheKey]: text }));
     }, []);
 
     // one celebration, at the one moment it's earned — lazy-loaded so confetti
@@ -50,7 +51,7 @@ function RoadmapView({ roadmap, onToggleStep }) {
                         key={mentorStep._id}
                         roadmap={roadmap}
                         step={mentorStep}
-                        cachedText={explanations[mentorStep._id]}
+                        cache={explanations}
                         onCached={cacheExplanation}
                         onClose={() => setMentorStep(null)}
                     />

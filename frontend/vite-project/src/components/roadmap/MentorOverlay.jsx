@@ -43,11 +43,29 @@ const STATUS_LINE = {
     error: "The mentor couldn't answer",
 };
 
+// Quick-action lenses — each re-asks the mentor with a different angle.
+const MODES = [
+    { id: "explain", label: "✨ Deep dive" },
+    { id: "simplify", label: "🧒 Simplify" },
+    { id: "example", label: "💻 Practical example" },
+    { id: "analogy", label: "🎯 Analogy" },
+];
+
 // Parent passes key={step._id}, so switching steps remounts and state re-derives from the cache.
-function MentorOverlay({ roadmap, step, cachedText, onCached, onClose }) {
-    const [text, setText] = useState(cachedText || "");
-    const [status, setStatus] = useState(cachedText ? "done" : "thinking");
+function MentorOverlay({ roadmap, step, cache, onCached, onClose }) {
+    const [mode, setMode] = useState("explain");
+    const cacheKey = `${step._id}:${mode}`;
+    const [text, setText] = useState(() => cache[`${step._id}:explain`] || "");
+    const [status, setStatus] = useState(() => (cache[`${step._id}:explain`] ? "done" : "thinking"));
     const [attempt, setAttempt] = useState(0);
+
+    const switchMode = (next) => {
+        if (next === mode) return;
+        setMode(next);
+        const cached = cache[`${step._id}:${next}`];
+        setText(cached || "");
+        setStatus(cached ? "done" : "thinking");
+    };
 
     // Esc closes, and the page behind the overlay stays put
     useEffect(() => {
@@ -62,13 +80,15 @@ function MentorOverlay({ roadmap, step, cachedText, onCached, onClose }) {
     }, [onClose]);
 
     useEffect(() => {
-        if (cachedText) return;
+        if (cache[cacheKey]) return;
         const ctrl = new AbortController();
         (async () => {
             try {
                 const res = await fetch(`${API_URL}/api/roadmaps/${roadmap._id}/steps/${step._id}/explain`, {
                     method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     credentials: "include",
+                    body: JSON.stringify({ mode }),
                     signal: ctrl.signal,
                 });
                 if (!res.ok) throw new Error("Request failed");
@@ -90,7 +110,7 @@ function MentorOverlay({ roadmap, step, cachedText, onCached, onClose }) {
                             setText(full);
                             setStatus("streaming");
                         } else if (event.type === "done") {
-                            onCached(step._id, full);
+                            onCached(cacheKey, full);
                             setStatus("done");
                         } else if (event.type === "error") {
                             throw new Error(event.message);
@@ -102,7 +122,7 @@ function MentorOverlay({ roadmap, step, cachedText, onCached, onClose }) {
             }
         })();
         return () => ctrl.abort();
-    }, [roadmap._id, step._id, cachedText, onCached, attempt]);
+    }, [roadmap._id, step._id, mode, cacheKey, cache, onCached, attempt]);
 
     const retry = () => {
         setText("");
@@ -147,6 +167,20 @@ function MentorOverlay({ roadmap, step, cachedText, onCached, onClose }) {
                     </div>
                 </div>
 
+                <div className="sp-mentor-actions" aria-label="Ask the mentor differently">
+                    {MODES.map((m) => (
+                        <button
+                            key={m.id}
+                            type="button"
+                            aria-pressed={mode === m.id}
+                            onClick={() => switchMode(m.id)}
+                            className="sp-mentor-mode"
+                        >
+                            {m.label}
+                        </button>
+                    ))}
+                </div>
+
                 <div className="sp-mentor-body">
                     {status === "error" ? (
                         <div className="sp-mentor-error">
@@ -160,6 +194,24 @@ function MentorOverlay({ roadmap, step, cachedText, onCached, onClose }) {
                             {renderMarkdown(text)}
                             {status !== "done" && <span className="sp-caret" aria-hidden="true" />}
                         </>
+                    )}
+                    {status === "done" && step.resources?.length > 0 && (
+                        <div className="sp-mentor-resources">
+                            <p className="sp-mentor-resources-title">📚 Look these up (opens a web search)</p>
+                            <div className="flex flex-wrap gap-2">
+                                {step.resources.map((r) => (
+                                    <a
+                                        key={r}
+                                        href={`https://www.google.com/search?q=${encodeURIComponent(`${r} ${roadmap.goal}`)}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="sp-mentor-resource"
+                                    >
+                                        {r} ↗
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
                     )}
                 </div>
             </motion.div>

@@ -1,20 +1,32 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { BookOpen, ChevronDown, Lock, Check, BookMarked, Sparkles } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { BookOpen, ChevronDown, Lock, BookMarked, Sparkles } from "lucide-react";
+import { sparkBurst } from "../../utils/reward.js";
 
 // Parent passes key={`${step._id}-${state}`}, so a state change remounts the card
-// and `open` re-derives — no state-syncing effect needed.
+// and `open` re-derives — no state-syncing effect needed. That remount is also
+// why the completion sparks render via document.body (see utils/reward.js) and
+// why the checkmark draw-in below simply animates on mount.
 function StepCard({ step, state, side, onToggle, onExplain }) {
     const [open, setOpen] = useState(state === "current");
+    const reduced = useReducedMotion();
     const locked = state === "locked";
     const resourceCount = step.resources?.length || 0;
+
+    const handleToggle = (e) => {
+        if (!step.completed) {
+            const r = e.currentTarget.getBoundingClientRect();
+            sparkBurst(r.left + r.width / 2, r.top + r.height / 2);
+        }
+        onToggle();
+    };
 
     return (
         <div className={`sp-jrow sp-step sp-side-${side} ${state}`}>
             <button
                 className="sp-node"
                 disabled={locked}
-                onClick={onToggle}
+                onClick={handleToggle}
                 title={
                     locked
                         ? "Finish the previous step to unlock"
@@ -23,7 +35,16 @@ function StepCard({ step, state, side, onToggle, onExplain }) {
                         : "Click to mark complete"
                 }
             >
-                {step.completed ? <Check size={18} strokeWidth={3} /> : locked ? <Lock size={14} /> : step.stepNumber}
+                {step.completed ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <motion.path
+                            d="M5 13l4 4L19 7"
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: 1 }}
+                            transition={{ duration: reduced ? 0 : 0.35, ease: "easeOut" }}
+                        />
+                    </svg>
+                ) : locked ? <Lock size={14} /> : step.stepNumber}
             </button>
 
             <div className={`sp-jcard p-6 ${state === "current" ? "sp-border-anim" : ""}`}>
@@ -78,7 +99,7 @@ function StepCard({ step, state, side, onToggle, onExplain }) {
                             <div className="flex flex-wrap items-center gap-3 mt-4">
                                 {state === "current" && (
                                     <button
-                                        onClick={onToggle}
+                                        onClick={handleToggle}
                                         className="neu-btn-accent px-5 py-2 font-semibold text-sm"
                                     >
                                         Mark complete ✓
