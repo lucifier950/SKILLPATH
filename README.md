@@ -37,10 +37,15 @@ and watch an LLM build you a step-by-step learning path, saved to your account.
 
 | | |
 |---|---|
-| 🤖 **AI Roadmap Generation** | Personalized learning paths (steps, durations, resources) generated from a 3-field form via Groq |
+| 🤖 **AI Roadmap Generation** | Personalized learning paths (steps, durations, resources) generated from a 3-field form via Groq — **streamed live** so steps appear as the LLM writes them |
+| 🧑‍🏫 **AI Step Mentor** | "Explain this step" overlay — the LLM breaks any roadmap step down further, on demand |
 | ✅ **Interactive Progress Tracking** | Animated timeline — completing a step unlocks the next one; ticks persist to MongoDB per user |
-| 🔐 **Real Authentication** | Register · Login · Logout · Session persistence — JWT in **HttpOnly cookies**, immune to XSS token theft |
+| 🔥 **Streaks & Activity Heatmap** | GitHub-style 12-week heatmap + daily streak counter built from your step completions |
+| 🔐 **Real Authentication** | Register · Login · Logout · **Google Sign-In** · Session persistence — JWT in **HttpOnly cookies**, immune to XSS token theft |
+| 🌌 **Glassmorphic Auth Pages** | CSS-drawn sky scene — twinkling stars & glowing moon in dark mode, dawn sun haze in light — behind a frosted-glass card that tilts toward the cursor |
+| 🌗 **Dark Mode** | Full light/dark theme toggle, persisted and applied before first paint (no flash) |
 | 🛡️ **Protected API** | `protect` middleware verifies the JWT on every private request — users only ever see *their own* roadmaps |
+| ⏱️ **Rate Limiting** | AI endpoints capped at 10 req / 15 min per IP (Groq budget), auth endpoints at 20 (brute-force protection) |
 | 🧯 **Clean Error Handling** | Custom `notFound` + `errorHandler` middleware — JSON errors only, stack traces never leak outside development |
 | 🔑 **Password Security** | bcrypt hashing via Mongoose pre-save hook — plaintext never touches the database |
 | 💾 **Persistence** | Roadmaps stored in MongoDB Atlas with per-step completion tracking built into the schema |
@@ -48,17 +53,20 @@ and watch an LLM build you a step-by-step learning path, saved to your account.
 ## 🏗️ Architecture
 
 ```
-        React 19 (Vite · Tailwind · neumorphic UI)
+   React 19 (Vite · Tailwind · neumorphic UI · dark mode)
                           │
               fetch + credentials:'include'
                           ▼
         ┌─────────── Express 5 API ───────────┐
         │  cors → express.json → cookieParser │
         │                                     │
-        │  /api/auth      → register / login  │
-        │                   logout / me  🔒   │
+        │  /api/auth      → ⏱️ authLimiter    │
+        │     register / login / google       │
+        │     logout / me  🔒                 │
         │  /api/roadmaps  → 🔒 protect        │
-        │        → controller → aiService     │
+        │     → ⏱️ aiLimiter → controller     │
+        │        → aiService (JSON + stream)  │
+        │  /api/contact   → save message      │
         │                          │          │
         │  notFound (404)          ▼          │
         │  errorHandler        🤖 Groq        │
@@ -67,20 +75,28 @@ and watch an LLM build you a step-by-step learning path, saved to your account.
                🍃 MongoDB Atlas
 ```
 
+The Express app itself lives in `app.js` (routes + middleware, no `.listen()`), while `server.js` connects the database and binds the port — so tests can import the app directly with supertest.
+
 **Roadmap request journey:** browser cookie → `protect` verifies JWT & attaches `req.user` → controller validates input → `aiService` prompts the LLM for strict JSON → output validated & parsed → saved to Atlas stamped with the owner's id → rendered by React.
 
 ## 📡 API Reference
 
 | Method | Endpoint | Auth | Description |
 |:------:|----------|:----:|-------------|
-| `POST` | `/api/auth/register` | — | Create account, sets JWT cookie |
-| `POST` | `/api/auth/login` | — | Login, sets JWT cookie |
+| `POST` | `/api/auth/register` | ⏱️ | Create account, sets JWT cookie |
+| `POST` | `/api/auth/login` | ⏱️ | Login, sets JWT cookie |
+| `POST` | `/api/auth/google` | ⏱️ | Sign in with a Google ID token |
 | `POST` | `/api/auth/logout` | — | Clears the JWT cookie |
 | `GET` | `/api/auth/me` | 🔒 | Current user's profile |
-| `POST` | `/api/roadmaps` | 🔒 | Generate & save an AI roadmap |
+| `POST` | `/api/roadmaps` | 🔒⏱️ | Generate & save an AI roadmap |
+| `POST` | `/api/roadmaps/stream` | 🔒⏱️ | Generate a roadmap, streamed as it's written |
 | `GET` | `/api/roadmaps` | 🔒 | List the logged-in user's roadmaps |
 | `PATCH` | `/api/roadmaps/:id/steps/:stepId` | 🔒 | Toggle a step's completion (owner only) |
+| `POST` | `/api/roadmaps/:id/steps/:stepId/explain` | 🔒⏱️ | AI mentor explanation of one step |
+| `POST` | `/api/contact` | — | Save a contact-form message |
 | `GET` | `/api/health` | — | Health check |
+
+🔒 requires a valid JWT cookie · ⏱️ rate-limited (auth: 20 / AI: 10 requests per 15 min)
 
 ## 🛠️ Running Locally
 
@@ -101,6 +117,7 @@ MONGO_URI=your_mongodb_atlas_connection_string
 JWT_SECRET=a_long_random_string
 NODE_ENV=development
 GROQ_API_KEY=gsk_your_groq_key
+GOOGLE_CLIENT_ID=your_google_oauth_client_id   # optional — enables Google Sign-In
 # CLIENT_URL is set ONLY in production (flips cookies to secure/cross-site mode)
 ```
 
@@ -118,7 +135,7 @@ npm run dev
 # → http://localhost:5173
 ```
 
-The frontend reads `VITE_API_URL` (defaults to `http://localhost:5001` for local dev).
+The frontend reads `VITE_API_URL` (defaults to `http://localhost:5001` for local dev) and `VITE_GOOGLE_CLIENT_ID` (optional — the Google button hides itself when unset).
 
 ## ☁️ Deployment
 
@@ -130,7 +147,7 @@ The frontend reads `VITE_API_URL` (defaults to `http://localhost:5001` for local
 | ⚙️ Backend API | **Render** | https://skillpath-1-plvi.onrender.com |
 | 🍃 Database | **MongoDB Atlas** | cloud-hosted cluster |
 
-**Config:** Render runs from root `backend` (`npm install` / `node server.js`) with env `MONGO_URI` `JWT_SECRET` `GROQ_API_KEY` `NODE_ENV=production` `CLIENT_URL`. Vercel builds from root `frontend/vite-project`.
+**Config:** Render runs from root `backend` (`npm install` / `node server.js`) with env `MONGO_URI` `JWT_SECRET` `GROQ_API_KEY` `GOOGLE_CLIENT_ID` `NODE_ENV=production` `CLIENT_URL`. Vercel builds from root `frontend/vite-project` with `VITE_GOOGLE_CLIENT_ID`.
 
 > **Safari-proof cookies:** `vercel.json` rewrites `/api/*` to the Render backend, so the frontend and API share one origin — the JWT cookie is always **first-party** and works in every browser (Safari blocks third-party cookies entirely).
 
@@ -139,6 +156,8 @@ The frontend reads `VITE_API_URL` (defaults to `http://localhost:5001` for local
 ## 🔒 Security Highlights
 
 - 🍪 JWT lives in an **HttpOnly** cookie — invisible to JavaScript, XSS-proof session storage
+- 🚦 Rate limiting on auth (brute-force) and AI (quota abuse) endpoints — AI limits count only authenticated traffic
+- 🪪 Google Sign-In verifies the ID token server-side against `GOOGLE_CLIENT_ID` — the client's word is never trusted
 - 🙈 Stack traces stripped from all error responses outside development
 - 🤐 `X-Powered-By` header disabled — the server doesn't advertise its stack
 - 🧂 Passwords bcrypt-hashed before storage; API responses never include the hash
