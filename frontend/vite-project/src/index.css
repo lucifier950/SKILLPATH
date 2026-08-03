@@ -10,6 +10,33 @@
     --neu-grad-2:#2d3a5a;
     --sp-success-text:#1e6e45;
     --sp-error-text:#8f2f40;
+
+    /* Depth system: every elevation = bevel highlight (soft-UI identity)
+       + tight directional key shadow ("sits above the page")
+       + wide low-opacity ambient shadow ("blocks room light").
+       --shadow-hsl is tinted toward the canvas so shadows never look sooty. */
+    --shadow-hsl: 221 30% 38%;
+    --bevel: rgba(255, 255, 255, 0.85);
+    --elev-1: -4px -4px 10px var(--bevel),
+               1px  2px  3px hsl(var(--shadow-hsl) / 0.22),
+               6px 10px 20px hsl(var(--shadow-hsl) / 0.14);
+    --elev-2: -6px -6px 16px var(--bevel),
+               2px  3px  5px hsl(var(--shadow-hsl) / 0.24),
+              10px 18px 36px hsl(var(--shadow-hsl) / 0.16);
+    --elev-3: -8px -8px 20px var(--bevel),
+               3px  5px  8px hsl(var(--shadow-hsl) / 0.26),
+              16px 28px 52px hsl(var(--shadow-hsl) / 0.20);
+    --well-1: inset  2px  2px  5px hsl(var(--shadow-hsl) / 0.30),
+              inset  6px  8px 16px hsl(var(--shadow-hsl) / 0.12),
+              inset -3px -3px  8px var(--bevel);
+    --well-2: inset  3px  3px  6px hsl(var(--shadow-hsl) / 0.34),
+              inset  8px 10px 20px hsl(var(--shadow-hsl) / 0.14),
+              inset -4px -4px 10px var(--bevel);
+
+    /* Motion */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 160ms;
+    --dur-base: 320ms;
 }
 [data-theme="dark"]{
     --neu-bg:#2a2d37;
@@ -21,6 +48,10 @@
     --neu-grad-2:#b9c8ec;
     --sp-success-text:#7ddcab;
     --sp-error-text:#f0a2b0;
+
+    /* dark canvases barely reflect light: near-black shadow, whisper bevel */
+    --shadow-hsl: 230 30% 4%;
+    --bevel: rgba(255, 255, 255, 0.05);
 }
 body{
     background-color: var(--neu-bg);
@@ -30,13 +61,11 @@ body{
 }
 .neu-raised{
     background: var(--neu-bg);
-    box-shadow:  6px 6px 12px var(--neu-dark),
-                 -6px -6px 12px var(--neu-light);
+    box-shadow: var(--elev-1);
 }
 .neu-pressed{
     background-color: var(--neu-bg);
-    box-shadow: inset 6px 6px 12px var(--neu-dark),
-                inset -6px -6px 12px var(--neu-light);
+    box-shadow: var(--well-2);
 }
 .neu-gradient-text{
     background: linear-gradient(135deg, var(--neu-accent), var(--neu-grad-2));
@@ -51,39 +80,47 @@ body{
     background: linear-gradient(145deg, #557ccb, #4361a3);
     color: #fff;
     border-radius: 14px;
-    box-shadow: 6px 6px 12px var(--neu-dark), -6px -6px 12px var(--neu-light);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* colored objects tint their own shadows — glow mixed from the accent */
+    box-shadow: -4px -4px 10px var(--bevel),
+                1px 2px 3px hsl(var(--shadow-hsl) / 0.25),
+                8px 14px 28px color-mix(in srgb, var(--neu-accent) 35%, transparent);
+    transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
-.neu-btn-accent:hover{ transform: translateY(-1px); }
+.neu-btn-accent:hover{
+    transform: translateY(-1px);
+    box-shadow: -4px -4px 10px var(--bevel),
+                2px 3px 5px hsl(var(--shadow-hsl) / 0.25),
+                10px 18px 36px color-mix(in srgb, var(--neu-accent) 50%, transparent);
+}
 .neu-btn-accent:active{
     box-shadow: inset 4px 4px 8px #3a559c, inset -2px -2px 6px #6a8bd6;
 }
 .neu-card{
     background: var(--neu-bg);
     border-radius: 20px;
-    box-shadow: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: var(--elev-2);
+    transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
 .neu-card:hover{
     transform: translateY(-4px);
-    box-shadow: 12px 12px 22px var(--neu-dark), -12px -12px 22px var(--neu-light);
+    box-shadow: var(--elev-3);
 }
 .neu-icon{
     background: var(--neu-bg);
-    box-shadow: 5px 5px 10px var(--neu-dark), -5px -5px 10px var(--neu-light);
+    box-shadow: var(--elev-1);
 }
 .neu-input{
     background: var(--neu-bg);
     color: var(--neu-text);
     border-radius: 12px;
-    box-shadow: inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light);
+    box-shadow: var(--well-1);
     outline: none;
     border: none;
-    transition: box-shadow 0.2s ease;
+    transition: box-shadow var(--dur-fast) var(--ease-out);
 }
 .neu-input::placeholder{ color: var(--neu-text-soft); }
 .neu-input:focus{
-    box-shadow: inset 5px 5px 10px var(--neu-dark), inset -5px -5px 10px var(--neu-light);
+    box-shadow: var(--well-2);
 }
 
 /* ===== Roadmap timeline ===== */
@@ -122,7 +159,7 @@ body{
     font-size: 1rem;
     color: var(--neu-text);
     background: var(--neu-bg);
-    box-shadow: 4px 4px 8px var(--neu-dark), -4px -4px 8px var(--neu-light);
+    box-shadow: var(--elev-1);
     cursor: pointer;
     transition: all 0.4s ease;
 }
@@ -207,7 +244,7 @@ body{
 /* ===== Quiet Dock navbar ===== */
 .sp-nav{
     background: var(--neu-bg);
-    box-shadow: 6px 6px 12px var(--neu-dark), -6px -6px 12px var(--neu-light);
+    box-shadow: var(--elev-1);
     transition: background-color 0.3s ease, box-shadow 0.3s ease, padding 0.3s ease;
 }
 .sp-nav-scrolled{
@@ -734,6 +771,50 @@ body{
 .sp-glass-btn:focus-visible{
     outline: 2px solid var(--neu-text);
     outline-offset: 2px;
+}
+
+/* ===== Premium theme toggle: sun↔moon morph + circular reveal ===== */
+.sp-theme-toggle:focus-visible{
+    outline: 2px solid var(--neu-accent);
+    outline-offset: 2px;
+}
+.sp-tt{ transition: transform var(--dur-base) var(--ease-out); }
+.sp-tt[data-dark]{ transform: rotate(-15deg); }
+.sp-tt-core{ transition: r var(--dur-base) var(--ease-out); }
+.sp-tt-bite{
+    transition: cx var(--dur-base) var(--ease-out),
+                cy var(--dur-base) var(--ease-out);
+}
+.sp-tt-rays{
+    transform-origin: 12px 12px;
+    transition: transform var(--dur-base) var(--ease-out),
+                opacity var(--dur-fast) ease;
+}
+.sp-tt[data-dark] .sp-tt-rays{
+    opacity: 0;
+    transform: rotate(60deg) scale(0.35);
+}
+
+/* View-transition theme reveal: the snapshots must not cross-fade on their
+   own — the clip-path circle (driven from ThemeToggle via WAAPI) is the
+   whole animation. .sp-vt freezes per-element color transitions so the new
+   snapshot is the finished theme, not a mid-fade frame. */
+::view-transition-old(root),
+::view-transition-new(root){
+    animation: none;
+    mix-blend-mode: normal;
+}
+html.sp-vt *,
+html.sp-vt *::before,
+html.sp-vt *::after{
+    transition: none !important;
+}
+/* …except the toggle icon: the new-root snapshot renders live, so the
+   sun↔moon morph plays inside the expanding circle */
+html.sp-vt .sp-tt,
+html.sp-vt .sp-tt *{
+    transition-property: transform, opacity, r, cx, cy !important;
+    transition-duration: var(--dur-base) !important;
 }
 
 @media (prefers-reduced-motion: reduce){
