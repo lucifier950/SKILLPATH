@@ -119,29 +119,55 @@ export async function* streamRoadmapEvents(goal, level, weeklyHours) {
     yield { type: 'complete', data: parseRoadmapContent(text) };
 }
 
-const buildExplainPrompt = (goal, level, step) => `
-    Act as a friendly senior mentor. Your student is learning "${goal}" (current level: ${level})
-    and has reached the roadmap step "${step.title}": ${step.description}
-
+// Quick-action lenses for the mentor overlay. Default "explain" keeps the
+// original four-section deep dive; the others re-angle the same step.
+const EXPLAIN_MODES = {
+    explain: (goal) => `
     Explain this step in markdown with EXACTLY these four sections:
     ## What it really is
     ## Why it matters for ${goal}
     ## How to practice this week
     ## Watch out
+    `,
+    simplify: () => `
+    Explain this step as if to a curious 12-year-old. Markdown with EXACTLY these sections:
+    ## The simple version
+    ## A picture in words
+    ## Try this
+    Use everyday words only — no jargon unless you immediately define it.
+    `,
+    example: (goal) => `
+    Show ONE concrete practical example of this step applied to "${goal}". Markdown with EXACTLY these sections:
+    ## The scenario
+    ## Step by step
+    ## What you'd have at the end
+    Be specific: real tool names, realistic inputs and outputs, no vague hand-waving.
+    `,
+    analogy: () => `
+    Explain this step through ONE real-world analogy carried all the way through. Markdown with EXACTLY these sections:
+    ## The analogy
+    ## How it maps
+    ## Where the analogy breaks
+    `,
+};
 
+const buildExplainPrompt = (goal, level, step, mode = 'explain') => `
+    Act as a friendly senior mentor. Your student is learning "${goal}" (current level: ${level})
+    and has reached the roadmap step "${step.title}": ${step.description}
+    ${(EXPLAIN_MODES[mode] || EXPLAIN_MODES.explain)(goal)}
     Keep the whole answer under 250 words. Use short paragraphs and "- " bullets,
     bold the key terms with **double asterisks**, and speak directly to the student as "you".
-    No preamble, no code fences, no headings other than the four above.
+    No preamble, no code fences, no headings other than the ones listed above.
     `;
 
 // Async generator: yields raw markdown text deltas for a single step explanation.
-export async function* streamStepExplanation(goal, level, step) {
+export async function* streamStepExplanation(goal, level, step, mode = 'explain') {
     const groq = getGroq();
     if (!groq) {
         throw new Error('AI service is not configured');
     }
     const stream = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: buildExplainPrompt(goal, level, step) }],
+        messages: [{ role: 'user', content: buildExplainPrompt(goal, level, step, mode) }],
         model: 'llama-3.3-70b-versatile',
         temperature: 0.5,
         stream: true,
@@ -151,3 +177,23 @@ export async function* streamStepExplanation(goal, level, step) {
         if (text) yield text;
     }
 }
+// One-shot goal enrichment for the "Expand Prompt" button: short goal in,
+// one specific goal sentence out — plain text, not JSON.
+export const enhanceGoal = async (goal) => {
+    const groq = getGroq();
+    if (!groq) {
+        throw new Error('AI service is not configured');
+    }
+    const completion = await groq.chat.completions.create({
+        messages: [{
+            role: 'user',
+            content: `A learner typed this learning goal: "${goal}".
+Rewrite it as ONE richer, more specific learning goal (25 words max) naming the key sub-topics worth covering.
+Return ONLY the rewritten goal text — no quotes, no preamble, no explanations.`,
+        }],
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.4,
+        max_tokens: 80,
+    });
+    return (completion.choices[0]?.message?.content || '').trim().replace(/^["']|["']$/g, '');
+};

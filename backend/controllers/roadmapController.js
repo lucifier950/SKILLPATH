@@ -1,5 +1,17 @@
 import Roadmap from '../models/Roadmap.js';
-import { generateRoadmapWithAI, streamRoadmapEvents, streamStepExplanation } from '../services/aiService.js';
+import { generateRoadmapWithAI, streamRoadmapEvents, streamStepExplanation, enhanceGoal } from '../services/aiService.js';
+
+// "Expand Prompt": turn a terse goal into a specific one. Nothing is persisted —
+// the enriched text just goes back into the form for the user to edit or submit.
+export const expandGoal = async (req, res) => {
+    const { goal } = req.body;
+    if (!goal || !goal.trim()) {
+        res.status(400);
+        throw new Error('Please enter a goal to expand');
+    }
+    const expanded = await enhanceGoal(goal.trim());
+    res.json({ goal: expanded });
+};
 
 export const createRoadmap = async (req, res) => {
     const { goal, level, weeklyHours } = req.body;
@@ -100,13 +112,17 @@ export const explainStep = async (req, res) => {
         res.status(404);
         throw new Error('Step not found');
     }
+    // mode picks the mentor lens; anything unknown falls back to the default deep dive
+    const mode = ['explain', 'simplify', 'example', 'analogy'].includes(req.body?.mode)
+        ? req.body.mode
+        : 'explain';
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
     const send = (payload) => res.write(`data: ${JSON.stringify(payload)}\n\n`);
     try {
-        for await (const text of streamStepExplanation(roadmap.goal, roadmap.level, step)) {
+        for await (const text of streamStepExplanation(roadmap.goal, roadmap.level, step, mode)) {
             send({ type: 'chunk', text });
         }
         send({ type: 'done' });
