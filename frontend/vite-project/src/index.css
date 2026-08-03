@@ -775,6 +775,63 @@ body{
     outline-offset: 2px;
 }
 
+/* ===== About page: milestone trail + stack colophon ===== */
+.sp-about-eyebrow{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--neu-accent);
+    margin-bottom: 1.2rem;
+}
+.sp-about-stop{
+    display: flex;
+    gap: 1.5rem;
+}
+.sp-about-marker{
+    position: relative;
+    width: 22px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding-top: 0.35rem;
+}
+/* the dotted trail between markers — same language as the logo */
+.sp-about-stop:not(:last-child) .sp-about-marker::after{
+    content: "";
+    position: absolute;
+    top: 1.9rem;
+    bottom: 0.4rem;
+    left: 50%;
+    width: 0;
+    border-left: 2px dashed color-mix(in srgb, var(--neu-accent) 45%, transparent);
+}
+.sp-about-stackrow{
+    display: grid;
+    grid-template-columns: 6rem 1fr;
+    gap: 1rem;
+    padding: 0.8rem 0;
+}
+.sp-about-stackrow + .sp-about-stackrow{
+    border-top: 1px solid color-mix(in srgb, var(--neu-text-soft) 22%, transparent);
+}
+.sp-about-stackrow dt{
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--neu-accent);
+    padding-top: 0.15rem;
+}
+.sp-about-stackrow dd{
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--neu-text-soft);
+}
+
 /* ===== Mentor overlay: quick-action lenses + resource search links ===== */
 .sp-mentor-actions{
     display: flex;
