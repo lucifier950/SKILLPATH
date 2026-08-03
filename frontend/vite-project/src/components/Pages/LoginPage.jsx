@@ -4,6 +4,8 @@ import { API_URL } from "../../api.js";
 import { useAuth } from "../../context/useAuth.js";
 import { useToast } from "../../context/useToast.js";
 import GoogleAuthButton from "../GoogleAuthButton.jsx";
+import AuthSky from "../auth/AuthSky.jsx";
+import PasswordInput from "../auth/PasswordInput.jsx";
 
 function LoginPage(){
     const [form,setForm] = useState({email: "",password:""});
@@ -44,27 +46,18 @@ function LoginPage(){
         return <Navigate to="/roadmap" replace />;
     }
     return(
-        <div className="relative overflow-hidden">
-        <div className="sp-aurora" aria-hidden="true"><span /><span /><span /></div>
-        <div className="relative max-w-xl mx-auto py-16 px-4">
-            <h1 className="text-4xl font-extrabold tracking-tight mb-3 text-center neu-gradient-text">
-                Welcome back
-            </h1>
-            <p className="text-center text-[var(--neu-text-soft)] mb-8">
-                Pick up right where you left off.
-            </p>
-            <form onSubmit={handleSubmit} className="neu-card p-8">
-                <input name="email" type="email" placeholder="Your email" value={form.email} onChange={handleChange} className="neu-input w-full p-3 mb-4"/>
-                <input name="password" type="password" placeholder="Your Password" value={form.password} onChange={handleChange} className="neu-input w-full p-3 mb-4"/>
-                <button type ="submit" className="neu-btn-accent w-full font-semibold py-3">Login</button>
+        <AuthSky title="Welcome back" subtitle="Sign in to continue to SkillPath.">
+            <form onSubmit={handleSubmit}>
+                <input name="email" type="email" placeholder="Your email" value={form.email} onChange={handleChange} className="sp-glass-input mb-4"/>
+                <PasswordInput name="password" placeholder="Your password" value={form.password} onChange={handleChange}/>
+                <button type="submit" className="sp-glass-btn">Sign in</button>
                 <GoogleAuthButton />
-                <p className="text-center text-[var(--neu-text-soft)] mt-4">
+                <p className="text-center text-[var(--neu-text-soft)] mt-5 text-sm">
                     New to SkillPath?{" "}
-                    <Link to="/signup" className="text-[var(--neu-accent)] font-semibold">Create an account</Link>
+                    <Link to="/signup" className="text-[var(--neu-accent)] font-semibold">Create account</Link>
                 </p>
             </form>
-        </div>
-        </div>
+        </AuthSky>
     );
 
 }
