@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkillPath — AI Learning Roadmaps</title>
+    <script>
+      // Set the theme before first paint to avoid a light-mode flash
+      try {
+        var t = localStorage.getItem("sp-theme");
+        if (t !== "light" && t !== "dark") {
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.dataset.theme = t;
+      } catch (e) { /* private mode — default light */ }
+    </script>
+    <script type="module" crossorigin src="/static/assets/index-CgeyDVuu.js"></script>
+    <link rel="stylesheet" crossorigin href="/static/assets/index.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

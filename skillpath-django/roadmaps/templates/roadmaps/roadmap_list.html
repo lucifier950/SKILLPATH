@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}My roadmaps{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+  <div>
+    <p class="text-xs font-bold uppercase tracking-widest text-[var(--neu-text-soft)] mb-1">Manage &amp; reports</p>
+    <h1 class="text-4xl font-extrabold tracking-tight neu-gradient-text">My roadmaps</h1>
+  </div>
+  <div class="flex flex-wrap gap-3">
+    <a href="{% url 'roadmap_report_csv' %}" class="neu-raised rounded-xl px-5 py-3 text-sm font-semibold text-[var(--neu-accent)]">Export CSV</a>
+    <a href="{% url 'roadmap_create' %}" class="neu-btn-accent px-5 py-3 text-sm font-semibold">+ New roadmap</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
+  <div class="neu-card p-5 text-center">
+    <p class="text-3xl font-extrabold">{{ roadmap_count }}</p>
+    <p class="text-sm font-semibold text-[var(--neu-text-soft)]">Roadmaps</p>
+  </div>
+  <div class="neu-card p-5 text-center">
+    <p class="text-3xl font-extrabold">{{ totals.done }} / {{ totals.total }}</p>
+    <p class="text-sm font-semibold text-[var(--neu-text-soft)]">Steps completed</p>
+  </div>
+  <div class="neu-card p-5 text-center">
+    <p class="text-3xl font-extrabold">{% widthratio totals.done totals.total 100 %}%</p>
+    <p class="text-sm font-semibold text-[var(--neu-text-soft)]">Overall progress</p>
+  </div>
+  <div class="neu-card p-5 text-center">
+    {% for row in by_level %}
+      <p class="flex justify-between text-sm font-semibold"><span class="text-[var(--neu-text-soft)]">{{ row.level|capfirst }}</span><span>{{ row.count }}</span></p>
+    {% empty %}
+      <p class="text-sm text-[var(--neu-text-soft)]">No roadmaps yet</p>
+    {% endfor %}
+    <p class="mt-1 text-xs font-bold uppercase tracking-widest text-[var(--neu-text-soft)]">By level</p>
+  </div>
+</div>
+
+<form method="get" class="neu-raised rounded-2xl p-4 mb-8 flex flex-wrap gap-3">
+  <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Search goals…" aria-label="Search goals"
+         class="neu-input px-4 py-3 flex-1 min-w-48">
+  <select name="level" aria-label="Level" class="neu-input px-4 py-3">
+    <option value="">All levels</option>
+    {% for value, label in levels %}
+      <option value="{{ value }}" {% if request.GET.level == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="neu-btn-accent px-6 py-3 text-sm font-semibold">Filter</button>
+  {% if request.GET.q or request.GET.level %}
+    <a href="{% url 'roadmap_list' %}" class="px-4 py-3 text-sm font-semibold text-[var(--neu-text-soft)] hover:text-[var(--neu-text)]">Clear</a>
+  {% endif %}
+</form>
+
+<div class="neu-raised rounded-2xl p-2 mb-8 overflow-x-auto">
+  <table class="w-full text-left text-sm">
+    <thead class="text-xs font-bold uppercase tracking-widest text-[var(--neu-text-soft)]">
+      <tr><th class="px-4 py-3">Goal</th><th class="px-4 py-3">Level</th><th class="px-4 py-3">Hours / week</th><th class="px-4 py-3">Progress</th><th class="px-4 py-3">Created</th></tr>
+    </thead>
+    <tbody>
+      {% for roadmap in roadmap_list %}
+        <tr class="border-t border-[var(--neu-dark)]/40">
+          <td class="px-4 py-4 font-semibold"><a href="{{ roadmap.get_absolute_url }}" class="text-[var(--neu-accent)] hover:underline">{{ roadmap.goal }}</a></td>
+          <td class="px-4 py-4">{{ roadmap.get_level_display }}</td>
+          <td class="px-4 py-4">{{ roadmap.weekly_hours }}</td>
+          <td class="px-4 py-4">
+            <div class="flex items-center gap-3">
+              <div class="sp-progress-track w-28" style="height: 8px"><div class="sp-progress-fill" style="width: {% widthratio roadmap.done roadmap.total 100 %}%"></div></div>
+              <span class="text-[var(--neu-text-soft)]">{{ roadmap.done }}/{{ roadmap.total }}</span>
+            </div>
+          </td>
+          <td class="px-4 py-4 text-[var(--neu-text-soft)]">{{ roadmap.created_at|date:"d M Y" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="px-4 py-6 text-[var(--neu-text-soft)]">No roadmaps found. <a href="{% url 'roadmap_create' %}" class="font-semibold text-[var(--neu-accent)]">Generate one</a>.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if recent %}
+  <div class="neu-raised rounded-2xl p-6">
+    <h2 class="text-lg font-extrabold tracking-tight mb-3">Recently completed</h2>
+    <ul class="space-y-2 text-sm">
+      {% for step in recent %}
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#4cc98a]"></span>
+          <span><span class="font-semibold">{{ step.title }}</span> <span class="text-[var(--neu-text-soft)]">· {{ step.roadmap.goal }}, {{ step.completed_at|timesince }} ago</span></span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+{% endblock %}

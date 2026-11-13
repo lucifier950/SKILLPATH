@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit roadmap{% else %}New roadmap{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'roadmap_list' %}{% endif %}"
+     class="text-sm font-semibold text-[var(--neu-text-soft)] hover:text-[var(--neu-text)]">← Back</a>
+  <h1 class="mt-2 text-3xl font-extrabold tracking-tight neu-gradient-text">
+    {% if object %}Edit “{{ object.goal }}”{% else %}Generate a new roadmap{% endif %}
+  </h1>
+  <form method="post" class="mt-6 neu-raised rounded-2xl p-6 sp-form">
+    {% csrf_token %}
+    {{ form.as_div }}
+    <p class="mb-5 text-sm text-[var(--neu-text-soft)]">
+      {% if object %}Changing these details keeps the existing steps.{% else %}GPT-OSS 120B on Groq builds the steps, which takes a few seconds.{% endif %}
+    </p>
+    <button type="submit" class="neu-btn-accent w-full py-3 font-semibold">{% if object %}Save changes{% else %}Generate roadmap{% endif %}</button>
+  </form>
+</div>
+{% endblock %}

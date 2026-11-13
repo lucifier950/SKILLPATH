@@ -1,0 +1,76 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Manage{% endblock %} · SkillPath</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <script>
+    // Same theme contract as the React app (frontend/index.html): set data-theme before first paint.
+    try {
+      var t = localStorage.getItem("sp-theme");
+      if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.dataset.theme = t;
+    } catch (e) { /* private mode: default light */ }
+  </script>
+  {# The React app's own stylesheet: same Inter font, colours, soft-UI shadows and Tailwind utilities. #}
+  <link rel="stylesheet" href="{% static 'assets/index.css' %}">
+  <style>
+    /* Django renders form widgets without classes; give them the app's inset input look. */
+    .sp-form input, .sp-form select { width: 100%; padding: .75rem 1rem; border: none; outline: none; border-radius: 12px;
+      background: var(--neu-bg); color: var(--neu-text); box-shadow: var(--well-1); }
+    .sp-form input:focus, .sp-form select:focus { box-shadow: var(--well-2); }
+    .sp-form label { display: block; margin-bottom: .4rem; font-size: .9rem; font-weight: 600; color: var(--neu-text-soft); }
+    .sp-form > div { margin-bottom: 1.25rem; }
+    .errorlist { margin-top: .4rem; font-size: .875rem; font-weight: 600; color: var(--sp-error-text); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <nav class="sp-nav m-4 rounded-2xl sticky top-4 z-50 px-6 py-3.5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <a href="/" class="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[var(--neu-accent)]">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="sp-logo" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0" style="stop-color: var(--neu-accent)"/><stop offset="1" stop-color="#8f6ae0"/>
+            </linearGradient>
+          </defs>
+          <path d="M8 26 C20 24 24 20 16 16 C8 12 12 8 24 6" stroke="url(#sp-logo)" stroke-width="2.8" stroke-linecap="round" fill="none" stroke-dasharray="0.1 5.2"/>
+          <circle cx="8" cy="26" r="3" fill="#4cc98a"/>
+          <path d="M24 6 l1 2.2 2.4 .3 -1.8 1.7 .5 2.4 -2.1 -1.2 -2.1 1.2 .5 -2.4 -1.8 -1.7 2.4 -.3z" fill="url(#sp-logo)"/>
+        </svg>
+        SkillPath
+      </a>
+      <div class="flex flex-wrap items-center gap-1 text-sm font-semibold">
+        <a href="/" class="px-4 py-2 rounded-xl text-[var(--neu-text-soft)] hover:text-[var(--neu-text)] transition-colors">Home</a>
+        <a href="/roadmap" class="px-4 py-2 rounded-xl text-[var(--neu-text-soft)] hover:text-[var(--neu-text)] transition-colors">Roadmap</a>
+        <a href="{% url 'roadmap_list' %}" class="px-4 py-2 rounded-xl neu-pressed text-[var(--neu-accent)]" aria-current="page">Manage</a>
+        {% if user.is_staff %}
+          <a href="{% url 'admin:index' %}" class="px-4 py-2 rounded-xl text-[var(--neu-text-soft)] hover:text-[var(--neu-text)] transition-colors">Admin</a>
+        {% endif %}
+      </div>
+      <button type="button" id="sp-theme-toggle" class="neu-icon w-10 h-10 rounded-xl flex items-center justify-center text-[var(--neu-text-soft)]"
+              aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-4 pt-6 pb-16">
+    {% for message in messages %}
+      <div class="neu-raised rounded-xl px-5 py-3 mb-6 font-semibold text-[var(--sp-success-text)]">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    document.getElementById("sp-theme-toggle").addEventListener("click", function () {
+      var next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem("sp-theme", next); } catch (e) {}
+    });
+  </script>
+</body>
+</html>
